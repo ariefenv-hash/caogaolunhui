@@ -8,7 +8,10 @@
 
 ![CI](https://github.com/ariefenv-hash/caogaolunhui/actions/workflows/ci.yml/badge.svg)
 ![玩法](https://img.shields.io/badge/%E7%8E%A9%E6%B3%95-%E6%97%B6%E9%97%B4%E5%9B%9E%E5%A3%B0%E8%A7%A3%E8%B0%9C-blue)
-![版本](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-1.1.0-green)
+![版本](https://img.shields.io/badge/%E7%89%88%E6%9C%AC-1.2.0-green)
+
+> 字体：[站酷快乐体](https://www.zcool.com.cn/special/zcoolfonts/)（SIL OFL 1.1 许可，见 `src/assets/fonts/OFL.txt`），
+> 经子集化嵌入（仅含游戏用字，63KB）。
 
 ## 玩法核心
 
@@ -51,7 +54,8 @@ npx serve dist     # 或 python3 -m http.server 8000 -d dist
 ## 技术栈与结构
 
 React 18 + TypeScript + Vite 5；游戏本体为 Canvas 2D 手写引擎
-（60Hz 固定步长物理、逐帧位置录制与确定性重放、程序化火柴人骨骼动画、
+（60Hz 固定步长物理、逐帧位置录制与确定性重放、程序化火柴人骨骼动画：
+两段式四肢解析 IK + 步态循环 + vy 连续空中姿态、
 WebAudio 合成音效、离屏预渲染方格纸背景、Pointer Events 多点触控虚拟按键），零第三方游戏库依赖。
 
 ```

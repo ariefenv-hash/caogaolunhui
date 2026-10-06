@@ -1,11 +1,18 @@
 /* ===== 草稿轮回 · 手绘方格纸风格 ===== */
+@font-face {
+  font-family: 'ZCOOL KuaiLe';
+  src: url('./assets/fonts/zcool-kuaile-subset.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 :root {
   --ink: #2f2f38;
   --paper: #fbf7ec;
   --paper-2: #f3edde;
   --red: #c23b34;
   --blue: #3f6fd4;
-  --hand: 'Kaiti SC', 'KaiTi', 'STKaiti', 'LXGW WenKai', 'FZKaiTi', serif;
+  --hand: 'ZCOOL KuaiLe', 'Kaiti SC', 'KaiTi', 'STKaiti', 'LXGW WenKai', 'FZKaiTi', serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }

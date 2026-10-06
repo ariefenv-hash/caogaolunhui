@@ -122,6 +122,8 @@ export class Game {
   start() {
     if (this.running) return;
     this.running = true;
+    // 站酷快乐体加载完成后重绘预渲染纸张（水印等文字随字体更新）
+    try { document.fonts.ready.then(() => { this.paper = makePaper(); }); } catch { /* 旧浏览器忽略 */ }
     // 调试钩子（便于自动化测试检查内部状态）
     (window as unknown as { __dl?: Game }).__dl = this;
     this.input.onReset = () => this.die();
@@ -487,18 +489,22 @@ export class Game {
     // 遗骸（永久旧稿）
     for (const e of this.echoes) drawRemnant(ctx, e.remX, e.remY, GHOST_COLORS[e.ci], t + e.ci * 2);
 
-    // 移动中的旧稿（回声重放）
+    // 移动中的旧稿（回声重放）：姿态由状态推导 vx/vy，与真人一致
     for (const e of this.echoes) {
       if (this.tick >= e.len) continue;
       const stByte = e.st[this.tick];
+      const facing = (stByte & 1) === 1 ? -1 : 1;
       const state = (['idle', 'run', 'jump', 'fall'] as const)[stByte >> 1];
+      const evx = state === 'run' ? facing * MOVE_SPEED : 0;
+      const evy = state === 'jump' ? -620 : state === 'fall' ? 620 : 0;
       drawStickman(ctx, {
         x: e.xs[this.tick] + PLAYER_W / 2,
         y: e.ys[this.tick] + PLAYER_H,
-        facing: (stByte & 1) === 1 ? -1 : 1,
+        facing,
         state,
         animT: this.tick / 60 + e.ci * 3,
         squash: 0,
+        vx: evx, vy: evy,
       }, { color: GHOST_COLORS[e.ci], alpha: 0.55, lw: 2.6, jitter: 0.9, seed: e.ci + 1 });
     }
 
@@ -522,6 +528,7 @@ export class Game {
       drawStickman(ctx, {
         x: p.x + PLAYER_W / 2, y: p.y + PLAYER_H,
         facing: p.facing, state, animT: p.animT, squash: p.squash,
+        vx: p.vx, vy: p.vy,
       }, { color: INK, alpha: 1, lw: 3.4 });
     }
 

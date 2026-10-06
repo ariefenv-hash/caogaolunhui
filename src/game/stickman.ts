@@ -1,5 +1,7 @@
-// ===== 程序化火柴人渲染 =====
-// 所有姿势均由数学实时计算：跑动摆臂、跳跃蜷腿、下落挥臂、待机呼吸
+// ===== 程序化火柴人渲染 v2 =====
+// 升级：两段式四肢（解析 IK 生成真实膝盖/手肘）+ 步态循环（支撑/摆动相）
+//       + 空中姿态由 vy 连续驱动（起跳蹬伸→团身→展臂准备落地，apex 无跳变）
+//       + 躯干前倾随速度 + 待机呼吸/重心起伏
 
 export interface StickPose {
   x: number;       // 脚底中心 x
@@ -8,6 +10,8 @@ export interface StickPose {
   state: 'idle' | 'run' | 'jump' | 'fall';
   animT: number;
   squash: number;  // 挤压拉伸系数（落地 >0，起跳 <0）
+  vx?: number;     // 水平速度（前倾与步幅用，缺省 0）
+  vy?: number;     // 垂直速度（空中姿态连续变形，缺省 0）
 }
 
 export interface StickStyle {
@@ -20,6 +24,22 @@ export interface StickStyle {
 
 interface P { x: number; y: number }
 
+const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
+const lp = (a: P, b: P, k: number): P => ({ x: lerp(a.x, b.x, k), y: lerp(a.y, b.y, k) });
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+
+/** 两骨解析 IK：a=根（髋/肩），b=末端（脚/手），L=单段长度，bend=弯曲方向 ±1 → 返回中间关节 */
+function joint2(a: P, b: P, L: number, bend: number): P {
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const d = Math.hypot(dx, dy) || 0.0001;
+  const dc = Math.min(d, L * 2 - 0.6);
+  const t = dc / d;
+  const mx = a.x + dx * t * 0.5, my = a.y + dy * t * 0.5;
+  const h = Math.sqrt(Math.max(0, L * L - (dc * 0.5) ** 2));
+  const px = -dy / d, py = dx / d;
+  return { x: mx + px * h * bend, y: my + py * h * bend };
+}
+
 export function drawStickman(ctx: CanvasRenderingContext2D, p: StickPose, s: StickStyle) {
   const j = s.jitter ?? 0;
   const sd = (s.seed ?? 1) * 7.31;
@@ -27,6 +47,8 @@ export function drawStickman(ctx: CanvasRenderingContext2D, p: StickPose, s: Sti
   const pt = (x: number, y: number, k: number): P => ({ x: x + nz(k), y: y + nz(k + 3) });
 
   const cx = p.x, cy = p.y;
+  const F = p.facing;
+  const vy = p.vy ?? 0;
   ctx.save();
   ctx.globalAlpha = s.alpha;
   ctx.strokeStyle = s.color;
@@ -42,66 +64,129 @@ export function drawStickman(ctx: CanvasRenderingContext2D, p: StickPose, s: Sti
   ctx.translate(-cx, -cy);
 
   const headR = 7.2;
-  const bob = p.state === 'idle' ? Math.sin(p.animT * 2.2) * 0.9 : 0;
-  const hipX = cx, hipY = cy - 20 + bob * 0.4;
-  const shX = cx, shY = cy - 35 + bob;
-  const headX = cx + p.facing * 1.4 + nz(9) * 0.4;
-  const headY = cy - 43.5 + bob;
+  let hipY: number, shX: number, shY: number, headX: number, headY: number;
 
-  let f1: P, f2: P, h1: P, h2: P;
-  if (p.state === 'run') {
-    const ph = p.animT * 11.5;
-    const sw = Math.sin(ph);
-    f1 = pt(cx - 4.5 + sw * 7.5, cy - Math.max(0, sw) * 6.5, 0);
-    f2 = pt(cx + 4.5 - sw * 7.5, cy - Math.max(0, -sw) * 6.5, 6);
-    h1 = pt(shX - 7 - sw * 6.5, shY + 11, 12);
-    h2 = pt(shX + 7 + sw * 6.5, shY + 11, 15);
-  } else if (p.state === 'jump') {
-    f1 = pt(cx - 6, cy - 13, 0);
-    f2 = pt(cx + 7.5, cy - 7, 6);
-    h1 = pt(shX - 9, shY - 7, 12);
-    h2 = pt(shX + 9.5, shY - 9, 15);
-  } else if (p.state === 'fall') {
-    const w = Math.sin(p.animT * 16) * 2.5;
-    f1 = pt(cx - 7, cy - 2, 0);
-    f2 = pt(cx + 7, cy - 5.5, 6);
-    h1 = pt(shX - 10, shY - 9 + w, 12);
-    h2 = pt(shX + 10, shY - 8 - w, 15);
-  } else {
-    f1 = pt(cx - 5, cy, 0);
-    f2 = pt(cx + 5, cy, 6);
-    h1 = pt(shX - 6.5, shY + 12.5, 12);
-    h2 = pt(shX + 6.5, shY + 12.5, 15);
-  }
+  // 腿长/臂长（单段）：髋高 19、站直时膝微屈
+  const LEG = 10.4, ARM = 9.2;
+  // 膝盖朝前、手肘朝后的弯曲符号（由朝向镜像）
+  const kneeBend = -F, elbowBend = F;
 
-  const limb = (a: P, b: P, c: P) => {
+  const limb2 = (root: P, end: P, segLen: number, bend: number, jk: number) => {
+    const mid = joint2(root, end, segLen, bend);
     ctx.beginPath();
-    ctx.moveTo(a.x, a.y);
-    ctx.quadraticCurveTo(b.x, b.y, c.x, c.y);
+    ctx.moveTo(root.x, root.y);
+    ctx.quadraticCurveTo(mid.x + nz(jk) * 0.5, mid.y + nz(jk + 4) * 0.5, end.x, end.y);
     ctx.stroke();
   };
 
-  // 腿（膝盖略向前）
-  const legBend = p.facing * 2.4;
-  limb(pt(hipX, hipY, 18), pt((hipX + f1.x) / 2 + legBend, (hipY + f1.y) / 2 + 1.5, 20), f1);
-  limb(pt(hipX, hipY, 18), pt((hipX + f2.x) / 2 + legBend, (hipY + f2.y) / 2 + 1.5, 23), f2);
-  // 脊柱
-  const spineA = pt(shX, shY, 26), spineB = pt(hipX, hipY, 18);
+  const hip: P = { x: cx, y: 0 };       // y 稍后填
+  let f1: P, f2: P, h1: P, h2: P;
+
+  if (p.state === 'run') {
+    // ---- 步态循环：支撑相（脚贴地后扫）+ 摆动相（屈膝前摆）----
+    const speedK = clamp01(Math.abs(p.vx ?? 0) / 272);
+    const ph = p.animT * (10.5 + 2.5 * speedK);   // 步频随速度微增
+    const stride = 9.5 + 2.5 * speedK;
+    const lift = 9.5;
+    const swA = Math.cos(ph), swB = Math.cos(ph + Math.PI);
+    const liftA = Math.max(0, -Math.sin(ph));
+    const liftB = Math.max(0, Math.sin(ph));
+
+    // 身体上下起伏（两倍步频：触地吸收最低、蹬伸最高）
+    const bob = -1.8 * Math.cos(2 * ph);
+    hipY = cy - 19 + bob * 0.5;
+    // 躯干前倾（跑动姿态，随速度略增）
+    const lean = 2.1 + 0.9 * speedK;
+    shX = cx + F * lean;
+    shY = hipY - 14.6;
+    headX = shX + F * 1.3;
+    headY = shY - 8.3 + bob * 0.22;
+
+    f1 = pt(cx + F * swA * stride, cy - liftA * lift, 0);
+    f2 = pt(cx + F * swB * stride, cy - liftB * lift, 6);
+    // 摆臂与同侧腿反相，屈肘 90°，手在髋侧前后摆
+    h1 = pt(shX + F * (swB * 7.5 + 0.8), shY + 10.8 + 1.6 * Math.cos(2 * ph), 12);
+    h2 = pt(shX + F * (swA * 7.5 + 0.8), shY + 10.8 + 1.6 * Math.cos(2 * ph + Math.PI), 15);
+  } else if (p.state === 'jump' || p.state === 'fall') {
+    // ---- 空中连续姿态：由 vy 驱动，apex 处两侧姿态重合 → 无跳变 ----
+    hipY = cy - 19.5;
+    shX = cx + F * 0.8;
+    shY = hipY - 14.8;
+    headX = shX + F * 1.2;
+    headY = shY - 8.4;
+
+    // 中性收腿（vy≈0，两种状态在此衔接）
+    const nF1: P = { x: cx - F * 5, y: cy - 9 };
+    const nF2: P = { x: cx + F * 6, y: cy - 13 };
+    const nH1: P = { x: shX - F * 8, y: shY + 6 };
+    const nH2: P = { x: shX + F * 8, y: shY - 4 };
+
+    if (vy < 0) {
+      // 上升：蹬伸展开 → 收腿团身，接近 apex 时向中性姿态汇合（与下落段连续）
+      const k = clamp01(-vy / 780);
+      const m = clamp01(k * 1.15 - 0.15) * 0.55;
+      const extF1: P = { x: cx - F * 4, y: cy - 3 };
+      const extF2: P = { x: cx + F * 7.5, y: cy - 6 };
+      const extH1: P = { x: shX - F * 9, y: shY + 11 };
+      const extH2: P = { x: shX + F * 7, y: shY + 8.5 };
+      const tuckF1: P = { x: cx - F * 7.5, y: cy - 15 };
+      const tuckF2: P = { x: cx + F * 6, y: cy - 8 };
+      const tuckH1: P = { x: shX - F * 10, y: shY - 3 };
+      const tuckH2: P = { x: shX + F * 6.5, y: shY - 9 };
+      f1 = lp(lp(extF1, tuckF1, k), nF1, m);
+      f2 = lp(lp(extF2, tuckF2, k), nF2, m);
+      h1 = lp(lp(extH1, tuckH1, k), nH1, m);
+      h2 = lp(lp(extH2, tuckH2, k), nH2, m);
+    } else {
+      // 下落：中性 → 展臂张腿准备落地（越接近地面越慌）
+      const k = clamp01(vy / 950);
+      const wob = Math.sin(p.animT * 13) * 2.4 * k;
+      const spF1: P = { x: cx - F * 8.5, y: cy - 3 };
+      const spF2: P = { x: cx + F * 8, y: cy - 6.5 };
+      const spH1: P = { x: shX - F * 11.5, y: shY - 6 + wob };
+      const spH2: P = { x: shX + F * 11.5, y: shY - 6 - wob };
+      f1 = lp(nF1, spF1, k);
+      f2 = lp(nF2, spF2, k);
+      h1 = lp(nH1, spH1, k);
+      h2 = lp(nH2, spH2, k);
+    }
+  } else {
+    // ---- 待机：呼吸起伏 + 重心微移 + 手臂自然下垂微摆 ----
+    const br = Math.sin(p.animT * 2.2);
+    const sway = Math.sin(p.animT * 0.9) * 0.7;
+    hipY = cy - 19 + br * 0.35;
+    shX = cx + sway;
+    shY = hipY - 14.7 + br * 0.55;
+    headX = shX + F * 1.4;
+    headY = shY - 8.5 + br * 0.5;
+
+    f1 = pt(cx - 5.2, cy, 0);
+    f2 = pt(cx + 5.2, cy, 6);
+    h1 = pt(shX - 6.4, shY + 12.4 + br * 0.3, 12);
+    h2 = pt(shX + 6.4, shY + 12.4 - br * 0.3, 15);
+  }
+  hip.y = hipY;
+
+  // 两段式腿：髋 → 膝（IK，朝前弯）→ 脚
+  limb2(hip, f1, LEG, kneeBend, 18);
+  limb2(hip, f2, LEG, kneeBend, 21);
+  // 脊柱（带前倾）
+  const spineA = pt(shX, shY, 26), spineB = pt(cx, hipY, 18);
   ctx.beginPath();
   ctx.moveTo(spineA.x, spineA.y);
   ctx.lineTo(spineB.x, spineB.y);
   ctx.stroke();
-  // 手臂（肘部略向后）
-  const armBend = -p.facing * 2.2;
-  limb(pt(shX, shY, 26), pt((shX + h1.x) / 2 + armBend, (shY + h1.y) / 2 + 2.5, 28), h1);
-  limb(pt(shX, shY, 26), pt((shX + h2.x) / 2 + armBend, (shY + h2.y) / 2 + 2.5, 30), h2);
+  // 两段式臂：肩 → 肘（IK，朝后弯）→ 手
+  const shoulder: P = { x: spineA.x, y: spineA.y };
+  limb2(shoulder, h1, ARM, elbowBend, 28);
+  limb2(shoulder, h2, ARM, elbowBend, 30);
   // 头
   const hc = pt(headX, headY, 33);
   ctx.beginPath();
   ctx.arc(hc.x, hc.y, headR, 0, Math.PI * 2);
   ctx.stroke();
   // 眼睛（两只小点，朝向移动方向）
-  const ex = hc.x + p.facing * 2.6;
+  const ex = hc.x + F * 2.6;
   ctx.beginPath();
   ctx.arc(ex - 1.8, hc.y - 1.2, 0.95, 0, Math.PI * 2);
   ctx.arc(ex + 1.8, hc.y - 1.2, 0.95, 0, Math.PI * 2);

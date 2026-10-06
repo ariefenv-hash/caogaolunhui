@@ -52,7 +52,7 @@ export function makePaper(): HTMLCanvasElement {
   }
 
   // 角落手写小字
-  g.font = '15px "Kaiti SC", "KaiTi", "STKaiti", serif';
+  g.font = '15px "ZCOOL KuaiLe", "Kaiti SC", "KaiTi", "STKaiti", serif';
   g.fillStyle = 'rgba(80,80,95,0.28)';
   g.fillText('草稿纸 No.1 · Draft Loop', 96, 44);
 
@@ -392,7 +392,7 @@ export function drawPortal(ctx: CanvasRenderingContext2D, portal: Rect, t: numbe
     ctx.fill();
   }
   // 标签
-  ctx.font = '15px "Kaiti SC", "KaiTi", "STKaiti", serif';
+  ctx.font = '15px "ZCOOL KuaiLe", "Kaiti SC", "KaiTi", "STKaiti", serif';
   ctx.fillStyle = 'rgba(47,47,56,0.55)';
   ctx.textAlign = 'center';
   ctx.fillText('出 口', cx, portal.y - 10);
@@ -440,7 +440,7 @@ export function drawStamp(ctx: CanvasRenderingContext2D, text: string, t: number
   ctx.roundRect(-141, -44, 282, 88, 8);
   ctx.stroke();
   ctx.fillStyle = '#c23b34';
-  ctx.font = '46px "Kaiti SC", "KaiTi", "STKaiti", serif';
+  ctx.font = '46px "ZCOOL KuaiLe", "Kaiti SC", "KaiTi", "STKaiti", serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, 0, 2);
