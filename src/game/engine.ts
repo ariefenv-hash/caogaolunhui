@@ -50,6 +50,7 @@ interface Player {
   x: number; y: number; vx: number; vy: number;
   onGround: boolean; coyote: number; jbuf: number;
   facing: number; animT: number; squash: number;
+  springT: number; // 弹簧飞行锁定：期间不受可变跳高削顶影响
 }
 
 const ST_IDLE = 0, ST_RUN = 1, ST_JUMP = 2, ST_FALL = 3;
@@ -183,7 +184,7 @@ export class Game {
   // ---------- 玩家与轮回 ----------
   private spawnPlayer(): Player {
     const s = this.level.start;
-    return { x: s.x, y: s.y, vx: 0, vy: 0, onGround: false, coyote: 0, jbuf: 0, facing: 1, animT: 0, squash: 0 };
+    return { x: s.x, y: s.y, vx: 0, vy: 0, onGround: false, coyote: 0, jbuf: 0, facing: 1, animT: 0, squash: 0, springT: 0 };
   }
 
   private respawn() {
@@ -293,7 +294,9 @@ export class Game {
       sfx.jump();
       this.particles.dust(p.x + PLAYER_W / 2, p.y + PLAYER_H, 5);
     }
-    if (!this.input.jumpHeld && p.vy < -280) p.vy = -280; // 可变跳跃高度
+    // 可变跳跃高度（弹簧飞行期间豁免，保证 SPRING_V 完整 356px 弹升）
+    if (!this.input.jumpHeld && p.springT <= 0 && p.vy < -280) p.vy = -280;
+    p.springT = Math.max(0, p.springT - dt);
     p.vy = Math.min(MAX_FALL, p.vy + GRAVITY * dt);
 
     // 固体 = 静态平台 + 关闭的门
@@ -358,6 +361,7 @@ export class Game {
       const r: Rect = { x: sp.x, y: sp.y, w: sp.w, h: 14 };
       if (overlap(pRect(), r) && p.vy >= -10) {
         p.vy = SPRING_V;
+        p.springT = 0.55; // 覆盖整个弹升上升期（自然衰减到 -280 需 0.435s）
         p.onGround = false;
         p.squash = -0.5;
         this.springAnim[i] = 0.35;

@@ -89,9 +89,9 @@ export const LEVELS: LevelDef[] = [
   {
     id: 5,
     name: '红与蓝',
-    hint: '同一组的踏板必须同时被踩住。两份旧稿，缺一不可——先留一份在左边。',
+    hint: '同一组的踏板必须同时被踩住。两份旧稿，缺一不可——先留一份在左边，再翻过右侧尖刺留一份在右边，门才会开。',
     start: { x: 560, y: 574 },
-    portal: { x: 700, y: 540, w: 64, h: 80 },
+    portal: { x: 1174, y: 540, w: 64, h: 80 },
     solids: [
       { x: 0, y: 620, w: 1280, h: 100 },
     ],
@@ -104,7 +104,7 @@ export const LEVELS: LevelDef[] = [
       { x: 140, y: 612, w: 72, group: 'A' },
       { x: 1070, y: 612, w: 72, group: 'A' },
     ],
-    doors: [{ x: 600, y: 470, w: 26, h: 150, group: 'A' }],
+    doors: [{ x: 1144, y: 470, w: 26, h: 150, group: 'A' }],
     springs: [],
     drops: [
       { x: 250, y: 560 }, { x: 632, y: 430 }, { x: 980, y: 560 },
@@ -167,7 +167,7 @@ export const LEVELS: LevelDef[] = [
     portal: { x: 1170, y: 540, w: 64, h: 80 },
     solids: [
       { x: 0, y: 620, w: 1280, h: 100 },
-      { x: 940, y: 300, w: 200, h: 22 },
+      { x: 1000, y: 300, w: 200, h: 22 },
     ],
     spikes: [{ x: 300, y: 598, w: 90, h: 22 }],
     saws: [
@@ -179,7 +179,7 @@ export const LEVELS: LevelDef[] = [
     plates: [
       { x: 100, y: 612, w: 72, group: 'A' },
       { x: 720, y: 612, w: 72, group: 'A' },
-      { x: 980, y: 292, w: 72, group: 'B' },
+      { x: 1040, y: 292, w: 72, group: 'B' },
     ],
     doors: [
       { x: 860, y: 470, w: 26, h: 150, group: 'A' },
@@ -187,7 +187,7 @@ export const LEVELS: LevelDef[] = [
     ],
     springs: [{ x: 880, y: 606, w: 56 }],
     drops: [
-      { x: 210, y: 560 }, { x: 520, y: 480 }, { x: 770, y: 560 }, { x: 960, y: 262 },
+      { x: 210, y: 560 }, { x: 520, y: 480 }, { x: 770, y: 560 }, { x: 1090, y: 262 },
     ],
   },
   {
@@ -224,7 +224,7 @@ export const LEVELS: LevelDef[] = [
   {
     id: 10,
     name: '四稿终章',
-    hint: '大师课二·终章：云端一份（蓝）、雷区一份（蓝）、锯齿上空孤台一份（橙）。三份旧稿各就各位后，最后一稿穿过激光走廊，为整本草稿画上句号。',
+    hint: '大师课二·终章：云端一份（蓝）、雷区边缘一份（蓝）、锯齿上空孤台一份（橙）。三份旧稿各就各位后，最后一稿穿过激光走廊，为整本草稿画上句号。',
     start: { x: 110, y: 574 },
     portal: { x: 1170, y: 540, w: 64, h: 80 },
     solids: [
@@ -244,7 +244,7 @@ export const LEVELS: LevelDef[] = [
     ],
     plates: [
       { x: 120, y: 272, w: 72, group: 'A' },
-      { x: 690, y: 612, w: 72, group: 'A' },
+      { x: 402, y: 612, w: 72, group: 'A' },
       { x: 620, y: 422, w: 72, group: 'B' },
     ],
     doors: [
