@@ -79,6 +79,7 @@ export function MenuScreen({ onStart, onSelect, continueLabel }: Props) {
     <div className="screen menu-screen">
       <div className="menu-card">
         <div className="menu-seal">百稿通关</div>
+        <span className="ver-chip">v1.3.0 全新画风</span>
         <h1 className="menu-title">草稿轮回</h1>
         <p className="menu-sub">Draft Loop · 一本会记住你每次死亡的草稿纸</p>
         <MiniStage />

@@ -11,7 +11,7 @@ import { Particles } from './particles';
 import { drawStickman, drawRemnant } from './stickman';
 import {
   makePaper, drawSolids, drawDoor, drawPlate, drawSaw, drawLaser, drawSpring,
-  drawPortal, drawDrop, drawSpikeStrip, drawSawPath, drawLinks, drawStamp,
+  drawPortal, drawDrop, drawSpikeStrip, drawSawPath, drawLinks, drawStamp, boilFrame,
 } from './render';
 
 export interface WinStats {
@@ -97,6 +97,7 @@ export class Game {
   private hitstop = 0;
   private winT = 0;
   private winSent = false;
+  private stepDustT = 0;
 
   input = new Input();
 
@@ -334,6 +335,17 @@ export class Game {
     }
     p.squash -= p.squash * Math.min(1, 11 * dt);
 
+    // 奔跑时脚步扬尘（卡通节奏感）
+    if (p.onGround && p.vx !== 0) {
+      this.stepDustT += dt;
+      if (this.stepDustT >= 0.17) {
+        this.stepDustT = 0;
+        this.particles.dust(p.x + PLAYER_W / 2 - Math.sign(p.vx) * 9, p.y + PLAYER_H, 2);
+      }
+    } else {
+      this.stepDustT = 0.12;
+    }
+
     const pRect = (): Rect => ({ x: p.x, y: p.y, w: PLAYER_W, h: PLAYER_H });
 
     // 被关闭的门夹住
@@ -468,10 +480,11 @@ export class Game {
 
     const L = this.level;
     const t = this.attemptT;
+    const boil = boilFrame(t); // 沸腾线帧相位
 
     drawLinks(ctx, L.plates, L.doors, GROUP_COLORS);
-    drawSolids(ctx, L.solids);
-    L.doors.forEach((d, i) => drawDoor(ctx, d, this.doorAnim[i], GROUP_COLORS[d.group]));
+    drawSolids(ctx, L.solids, boil);
+    L.doors.forEach((d, i) => drawDoor(ctx, d, this.doorAnim[i], GROUP_COLORS[d.group], boil));
     L.plates.forEach((pl, i) => drawPlate(ctx, pl, this.platePressed[i], GROUP_COLORS[pl.group]));
     L.springs.forEach((sp, i) => drawSpring(ctx, sp, Math.min(1, this.springAnim[i] / 0.35)));
     L.drops.forEach((d, i) => { if (!this.dropsGot[i]) drawDrop(ctx, d.x, d.y, t + i * 1.7); });
@@ -520,7 +533,7 @@ export class Game {
       ctx.scale(1 - k, 1 - k);
       drawStickman(ctx, {
         x: 0, y: 0, facing: p.facing, state: 'fall', animT: p.animT, squash: 0,
-      }, { color: INK, alpha: 1 - k * 0.6, lw: 3.4 });
+      }, { color: INK, alpha: 1 - k * 0.6, lw: 3.8 });
       ctx.restore();
     } else {
       const state = p.onGround ? (p.vx !== 0 ? 'run' as const : 'idle' as const)
@@ -529,7 +542,7 @@ export class Game {
         x: p.x + PLAYER_W / 2, y: p.y + PLAYER_H,
         facing: p.facing, state, animT: p.animT, squash: p.squash,
         vx: p.vx, vy: p.vy,
-      }, { color: INK, alpha: 1, lw: 3.4 });
+      }, { color: INK, alpha: 1, lw: 3.8 });
     }
 
     this.particles.draw(ctx);

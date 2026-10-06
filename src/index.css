@@ -12,6 +12,11 @@
   --paper-2: #f3edde;
   --red: #c23b34;
   --blue: #3f6fd4;
+  --yellow: #ffd93d;
+  --yellow-soft: #ffe9a8;
+  --green-soft: #d9f2dd;
+  --pink-soft: #fde2ea;
+  --sky-soft: #ddeaff;
   --hand: 'ZCOOL KuaiLe', 'Kaiti SC', 'KaiTi', 'STKaiti', 'LXGW WenKai', 'FZKaiTi', serif;
 }
 
@@ -41,34 +46,34 @@ body {
   flex-direction: column;
 }
 
-/* ---------- 按钮 ---------- */
+/* ---------- 按钮：新粗野主义（粗描边 + 实色硬投影） ---------- */
 .btn {
   font-family: var(--hand);
   font-size: 19px;
   color: var(--ink);
   background: var(--paper-2);
-  border: 2px solid var(--ink);
-  border-radius: 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 8px;
   padding: 10px 26px;
   cursor: pointer;
-  box-shadow: 3px 3px 0 var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
   transition: transform 0.08s ease, box-shadow 0.08s ease;
 }
-.btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--ink); }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--ink); }
 .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.btn-primary { background: #ffe9a8; font-weight: bold; }
-.btn-small { font-size: 15px; padding: 6px 14px; box-shadow: 2px 2px 0 var(--ink); }
+.btn-primary { background: var(--yellow); font-weight: bold; }
+.btn-small { font-size: 15px; padding: 6px 14px; box-shadow: 3px 3px 0 var(--ink); }
 .btn-col { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
 .btn-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
 
-/* ---------- 主菜单 ---------- */
+/* ---------- 主菜单：贴纸海报风 ---------- */
 .menu-card {
   position: relative;
   width: min(680px, 92vw);
   background: var(--paper);
-  border: 2.5px solid var(--ink);
+  border: 3px solid var(--ink);
   border-radius: 14px;
-  box-shadow: 6px 6px 0 rgba(47,47,56,0.85);
+  box-shadow: 8px 8px 0 var(--ink);
   padding: 30px 36px 26px;
   text-align: center;
   transform: rotate(-0.4deg);
@@ -77,19 +82,33 @@ body {
   font-size: 64px;
   letter-spacing: 10px;
   line-height: 1.1;
+  text-shadow: 4px 4px 0 rgba(255, 217, 61, 0.6);
 }
 .menu-sub { font-size: 17px; opacity: 0.75; margin: 6px 0 14px; }
 .menu-seal {
   position: absolute;
   top: 18px; right: 22px;
-  color: var(--red);
-  border: 3px solid var(--red);
+  color: var(--paper);
+  background: var(--red);
+  border: 2.5px solid var(--ink);
   border-radius: 8px;
   padding: 4px 8px;
   font-size: 17px;
   letter-spacing: 3px;
   transform: rotate(8deg);
-  opacity: 0.85;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.ver-chip {
+  position: absolute;
+  top: 18px; left: 18px;
+  background: var(--sky-soft);
+  border: 2.5px solid var(--ink);
+  border-radius: 8px;
+  padding: 3px 9px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  transform: rotate(-5deg);
+  box-shadow: 3px 3px 0 var(--ink);
 }
 .menu-desc {
   font-size: 16.5px;
@@ -118,13 +137,13 @@ body {
   background: rgba(255,255,255,0.35);
 }
 
-/* ---------- 选关 ---------- */
+/* ---------- 选关：便签色块网格 ---------- */
 .select-card {
   width: min(860px, 94vw);
   background: var(--paper);
-  border: 2.5px solid var(--ink);
+  border: 3px solid var(--ink);
   border-radius: 14px;
-  box-shadow: 6px 6px 0 rgba(47,47,56,0.85);
+  box-shadow: 8px 8px 0 var(--ink);
   padding: 26px 30px;
   transform: rotate(0.3deg);
 }
@@ -149,17 +168,21 @@ body {
   align-items: flex-start;
   text-align: left;
   background: var(--paper-2);
-  border: 2px solid var(--ink);
-  border-radius: 10px;
+  border: 2.5px solid var(--ink);
+  border-radius: 8px;
   padding: 12px 14px;
   cursor: pointer;
-  box-shadow: 3px 3px 0 rgba(47,47,56,0.8);
+  box-shadow: 4px 4px 0 var(--ink);
   transition: transform 0.08s ease;
 }
 .level-card:nth-child(odd) { transform: rotate(-0.6deg); }
 .level-card:nth-child(even) { transform: rotate(0.5deg); }
-.level-card:hover:not(.locked) { transform: translate(-1px, -2px) rotate(0deg); }
-.level-card.locked { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+.level-card:hover:not(.locked) { transform: translate(-2px, -2px) rotate(0deg); box-shadow: 6px 6px 0 var(--ink); }
+.level-card:nth-child(4n+1) { background: var(--yellow-soft); }
+.level-card:nth-child(4n+2) { background: var(--green-soft); }
+.level-card:nth-child(4n+3) { background: var(--pink-soft); }
+.level-card:nth-child(4n+4) { background: var(--sky-soft); }
+.level-card.locked { background: var(--paper-2); opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 .lv-no { font-size: 13px; opacity: 0.6; }
 .lv-name { font-size: 22px; font-weight: bold; }
 .lv-best { font-size: 13px; opacity: 0.7; }
@@ -180,14 +203,20 @@ body {
 .hud-mid { font-size: 20px; letter-spacing: 2px; }
 .chip {
   background: var(--paper);
-  border: 1.8px solid var(--ink);
+  border: 2px solid var(--ink);
   border-radius: 999px;
   padding: 3px 13px;
   font-size: 14.5px;
-  box-shadow: 2px 2px 0 rgba(47,47,56,0.55);
+  box-shadow: 2px 2px 0 var(--ink);
   white-space: nowrap;
 }
-.chip-red { color: var(--red); border-color: var(--red); }
+.chip-red { color: var(--red); border-color: var(--ink); background: #f6d7d2; }
+.hud-mid {
+  font-size: 20px;
+  letter-spacing: 2px;
+  padding: 0 4px;
+  background: linear-gradient(transparent 55%, rgba(255, 217, 61, 0.55) 55% 95%, transparent 95%);
+}
 
 .canvas-wrap {
   position: relative;
@@ -198,9 +227,9 @@ body {
   width: 100%;
   aspect-ratio: 16 / 9;
   background: var(--paper);
-  border: 2.5px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 6px 6px 0 rgba(47,47,56,0.8);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 7px 7px 0 var(--ink);
 }
 .key-tips {
   margin-top: 8px;
@@ -234,9 +263,9 @@ body {
   font-size: 27px;
   font-weight: bold;
   color: var(--ink);
-  background: rgba(251, 247, 236, 0.55);
-  border: 2.2px solid rgba(47, 47, 56, 0.7);
-  box-shadow: 3px 3px 0 rgba(47, 47, 56, 0.3);
+  background: rgba(251, 247, 236, 0.85);
+  border: 3px solid rgba(47, 47, 56, 0.85);
+  box-shadow: 3px 3px 0 rgba(47, 47, 56, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -248,9 +277,9 @@ body {
 }
 .tc-btn.on,
 .tc-btn:active {
-  background: rgba(255, 233, 168, 0.9);
+  background: rgba(255, 217, 61, 0.95);
   transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 rgba(47, 47, 56, 0.3);
+  box-shadow: 1px 1px 0 rgba(47, 47, 56, 0.75);
 }
 .tc-btn-sm { width: 58px; height: 58px; font-size: 19px; }
 .tc-jump { background: rgba(217, 242, 221, 0.6); }
@@ -280,9 +309,9 @@ body {
 .overlay-card {
   width: min(480px, 86%);
   background: var(--paper);
-  border: 2.5px solid var(--ink);
+  border: 3px solid var(--ink);
   border-radius: 14px;
-  box-shadow: 5px 5px 0 rgba(47,47,56,0.85);
+  box-shadow: 7px 7px 0 var(--ink);
   padding: 24px 28px;
   text-align: center;
   transform: rotate(-0.5deg);
@@ -293,13 +322,13 @@ body {
 .ov-badge {
   position: absolute;
   top: -14px; left: 20px;
-  background: #ffe9a8;
-  border: 2px solid var(--ink);
+  background: var(--yellow);
+  border: 2.5px solid var(--ink);
   border-radius: 8px;
   padding: 3px 10px;
   font-size: 14px;
   transform: rotate(-3deg);
-  box-shadow: 2px 2px 0 rgba(47,47,56,0.6);
+  box-shadow: 3px 3px 0 var(--ink);
 }
 .ov-badge-green { background: #d9f2dd; color: #2f7a43; }
 .win-card h3 { margin-top: 6px; }

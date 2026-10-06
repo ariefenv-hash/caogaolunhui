@@ -71,6 +71,23 @@ export function drawStickman(ctx: CanvasRenderingContext2D, p: StickPose, s: Sti
   // 膝盖朝前、手肘朝后的弯曲符号（由朝向镜像）
   const kneeBend = -F, elbowBend = F;
 
+  // 卡通速度线：跑得快时身后拖出几道铅笔短斜线
+  const vxv = p.vx ?? 0;
+  if (p.state === 'run' && Math.abs(vxv) > 140) {
+    const k = clamp01(Math.abs(vxv) / 272);
+    const dir = -Math.sign(vxv); // 与移动相反方向（屏幕坐标）
+    ctx.save();
+    ctx.globalAlpha = s.alpha * 0.32 * k;
+    ctx.lineWidth = Math.max(1.2, s.lw * 0.42);
+    for (const [oy, len, gap] of [[-17, 13, 12], [-9, 17, 15], [-1, 11, 12]] as const) {
+      ctx.beginPath();
+      ctx.moveTo(cx + dir * gap, cy + oy);
+      ctx.lineTo(cx + dir * (gap + len * (0.6 + k * 0.5)), cy + oy - dir * 1.5);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   const limb2 = (root: P, end: P, segLen: number, bend: number, jk: number) => {
     const mid = joint2(root, end, segLen, bend);
     ctx.beginPath();
@@ -185,12 +202,80 @@ export function drawStickman(ctx: CanvasRenderingContext2D, p: StickPose, s: Sti
   ctx.beginPath();
   ctx.arc(hc.x, hc.y, headR, 0, Math.PI * 2);
   ctx.stroke();
-  // 眼睛（两只小点，朝向移动方向）
-  const ex = hc.x + F * 2.6;
+  // 呆毛（卡通小报画灵魂，随奔跑轻摆）
+  const ahS = Math.sin(p.animT * (p.state === 'run' ? 11 : 2.2)) * 1.6;
   ctx.beginPath();
-  ctx.arc(ex - 1.8, hc.y - 1.2, 0.95, 0, Math.PI * 2);
-  ctx.arc(ex + 1.8, hc.y - 1.2, 0.95, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.moveTo(hc.x - 1, hc.y - headR + 0.6);
+  ctx.quadraticCurveTo(hc.x - 2.5 + F + ahS * 0.4, hc.y - headR - 4.2, hc.x + 2 + F * 1.6 + ahS, hc.y - headR - 5.6);
+  ctx.stroke();
+
+  // ---- 卡通脸部：眨眼 / 惊慌 ><+汗滴 / 起跳开心眯眼 ----
+  const ex = hc.x + F * 2.6;
+  const vfall = Math.max(0, vy);
+  const vrise = Math.max(0, -vy);
+  const blink = ((p.animT + (s.seed ?? 0) * 1.7) % 3.4) < 0.13;
+  const eyeLw = Math.max(1.2, s.lw * 0.34);
+  if (vfall > 520) {
+    // 高速下坠：> < 惊慌眼 + 张嘴 + 甩出的汗滴
+    ctx.lineWidth = eyeLw;
+    for (const off of [-1.9, 1.9]) {
+      ctx.beginPath();
+      ctx.moveTo(ex + off - 1.5, hc.y - 2.7);
+      ctx.lineTo(ex + off + 1.5, hc.y + 0.1);
+      ctx.moveTo(ex + off + 1.5, hc.y - 2.7);
+      ctx.lineTo(ex + off - 1.5, hc.y + 0.1);
+      ctx.stroke();
+    }
+    ctx.beginPath();
+    ctx.arc(hc.x + F * 2.4, hc.y + 3.4, 1.7, 0, Math.PI * 2);
+    ctx.fill();
+    const swx = hc.x - F * 8.5 + Math.sin(p.animT * 14) * 1.5;
+    const swy = hc.y - 8.5 + Math.cos(p.animT * 14) * 1.2;
+    ctx.save();
+    ctx.globalAlpha = s.alpha * 0.9;
+    ctx.fillStyle = '#4a86d8';
+    ctx.beginPath();
+    ctx.moveTo(swx, swy - 4);
+    ctx.bezierCurveTo(swx + 2.6, swy - 0.4, swx + 2.3, swy + 1.8, swx, swy + 2.4);
+    ctx.bezierCurveTo(swx - 2.3, swy + 1.8, swx - 2.6, swy - 0.4, swx, swy - 4);
+    ctx.fill();
+    ctx.restore();
+  } else if (vrise > 420) {
+    // 上升跳跃：^ ^ 开心眯眼
+    ctx.lineWidth = eyeLw;
+    for (const off of [-1.9, 1.9]) {
+      ctx.beginPath();
+      ctx.arc(ex + off, hc.y + 0.3, 1.6, Math.PI * 1.15, Math.PI * 1.85);
+      ctx.stroke();
+    }
+  } else if (blink && (p.state === 'idle' || p.state === 'run')) {
+    // 眨眼瞬间：两条小横线
+    ctx.lineWidth = eyeLw;
+    for (const off of [-1.9, 1.9]) {
+      ctx.beginPath();
+      ctx.moveTo(ex + off - 1.3, hc.y - 1.2);
+      ctx.lineTo(ex + off + 1.3, hc.y - 1.2);
+      ctx.stroke();
+    }
+  } else {
+    // 默认：大一点的卡通圆点眼
+    ctx.beginPath();
+    ctx.arc(ex - 1.9, hc.y - 1.2, 1.35, 0, Math.PI * 2);
+    ctx.arc(ex + 1.9, hc.y - 1.2, 1.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // 手脚小圆点（卡通火柴人更圆润可爱）
+  for (const q of [f1, f2]) {
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 2.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  for (const q of [h1, h2]) {
+    ctx.beginPath();
+    ctx.arc(q.x, q.y, 1.9, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   ctx.restore();
 }
