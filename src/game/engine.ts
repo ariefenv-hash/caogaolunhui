@@ -273,8 +273,8 @@ export class Game {
     const p = this.player;
     p.animT += dt;
 
-    // 输入 → 速度
-    const left = this.input.left, right = this.input.right;
+    // 输入 → 速度（键盘与触屏虚拟按键合并）
+    const left = this.input.axisLeft, right = this.input.axisRight;
     if (left && !right) { p.vx = -MOVE_SPEED; p.facing = -1; }
     else if (right && !left) { p.vx = MOVE_SPEED; p.facing = 1; }
     else p.vx = 0;

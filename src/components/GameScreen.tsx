@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Game, type Snapshot, type WinStats } from '../game/engine';
 import { LEVELS } from '../game/levels';
 import { sfx } from '../game/audio';
+import type { TouchBtn } from '../game/input';
 
 interface Props {
   levelIdx: number;
@@ -23,7 +24,43 @@ export function GameScreen({ levelIdx, onExit, onComplete, onNext, hasNext }: Pr
   const [won, setWon] = useState<WinStats | null>(null);
   const [hint, setHint] = useState(true);
   const [nonce, setNonce] = useState(0);
+  const [tOn, setTOn] = useState<Partial<Record<TouchBtn, boolean>>>({});
   const level = LEVELS[levelIdx];
+
+  // 触屏设备检测：粗指针 / 支持触摸 / 移动端 UA（三路兜底）
+  const isTouch = useMemo(
+    () => typeof window !== 'undefined' && (
+      (window.matchMedia?.('(pointer: coarse)').matches) ||
+      'ontouchstart' in window ||
+      navigator.maxTouchPoints > 0 ||
+      /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    ),
+    [],
+  );
+
+  /** 虚拟按键事件绑定：指针捕获保证手指滑出按钮也能正确释放 */
+  const bindTouch = (btn: TouchBtn) => ({
+    onPointerDown: (e: React.PointerEvent) => {
+      e.preventDefault();
+      (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+      gameRef.current?.input.setTouch(btn, true);
+      setTOn((s) => ({ ...s, [btn]: true }));
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      e.preventDefault();
+      gameRef.current?.input.setTouch(btn, false);
+      setTOn((s) => ({ ...s, [btn]: false }));
+    },
+    onPointerCancel: () => {
+      gameRef.current?.input.setTouch(btn, false);
+      setTOn((s) => ({ ...s, [btn]: false }));
+    },
+    onLostPointerCapture: () => {
+      gameRef.current?.input.setTouch(btn, false);
+      setTOn((s) => ({ ...s, [btn]: false }));
+    },
+    onContextMenu: (e: React.MouseEvent) => e.preventDefault(),
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -79,8 +116,31 @@ export function GameScreen({ levelIdx, onExit, onComplete, onNext, hasNext }: Pr
       {/* 画布 */}
       <div className="canvas-wrap">
         <canvas ref={canvasRef} className="game-canvas" />
-        {/* 环形键位速记 */}
-        <div className="key-tips">A/D 移动 · 空格 跳 · R 牺牲本轮 · C 重画本关</div>
+        {/* 触屏虚拟按键（仅触屏设备显示） */}
+        {isTouch && (
+          <div className="touch-ui" aria-hidden>
+            <button
+              className="tc-btn tc-pause"
+              onPointerDown={(e) => { e.preventDefault(); gameRef.current?.togglePause(); }}
+              onContextMenu={(e) => e.preventDefault()}
+              title="暂停"
+            >‖</button>
+            <div className="tc-cluster tc-left">
+              <button className={`tc-btn${tOn.left ? ' on' : ''}`} {...bindTouch('left')}>◀</button>
+              <button className={`tc-btn${tOn.right ? ' on' : ''}`} {...bindTouch('right')}>▶</button>
+            </div>
+            <div className="tc-cluster tc-right">
+              <button className={`tc-btn tc-btn-sm tc-r${tOn.reset ? ' on' : ''}`} {...bindTouch('reset')}>R</button>
+              <button className={`tc-btn tc-jump${tOn.jump ? ' on' : ''}`} {...bindTouch('jump')}>跳</button>
+            </div>
+          </div>
+        )}
+
+        {/* 环形键位速记（触屏设备显示触屏提示） */}
+        {isTouch
+          ? <div className="key-tips">按住 ◀▶ 移动 · 按住「跳」跳得更高 · R 牺牲本轮 · ↻ 重画本关</div>
+          : <div className="key-tips">A/D 移动 · 空格 跳 · R 牺牲本轮 · C 重画本关</div>
+        }
 
         {/* 关卡提示 */}
         {hint && (

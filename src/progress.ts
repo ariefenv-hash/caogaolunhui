@@ -1,5 +1,6 @@
 // ===== 进度存档（localStorage）=====
 import type { BestRecord } from './game/types';
+import { LEVELS } from './game/levels';
 
 export interface Progress {
   unlocked: number; // 已解锁的关卡数（1-based）
@@ -15,7 +16,7 @@ export function loadProgress(): Progress {
     if (raw) {
       const p = JSON.parse(raw) as Partial<Progress>;
       return {
-        unlocked: Math.max(1, Math.min(8, p.unlocked ?? 1)),
+        unlocked: Math.max(1, Math.min(LEVELS.length, p.unlocked ?? 1)),
         best: p.best ?? {},
         muted: p.muted ?? false,
       };

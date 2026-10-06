@@ -1,7 +1,7 @@
 {
   "name": "stickman-draft-loop",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "草稿轮回 Draft Loop —— 火柴人时间回声解谜平台游戏",
   "scripts": {
